@@ -48,11 +48,11 @@ proportion_men_survived = \
 print('Proportion of women who survived is %s' % proportion_women_survived)
 print('Proportion of men who survived is %s' % proportion_men_survived)
 
-test_file = open('test.csv')
+test_file = open('data/test.csv')
 test_file_object = csv.reader(test_file)
 next(test_file_object)
 
-prediction_file = open('genderbasemodel.csv', 'w',  newline='')
+prediction_file = open('data/genderbasemodel.csv', 'w',  newline='')
 prediction_file_object = csv.writer(prediction_file)
 prediction_file_object.writerow(["PassengerID", "Survived"])
 

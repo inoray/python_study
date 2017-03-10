@@ -22,7 +22,7 @@ data[data3, 9] = fare_ceiling - 1.0
 #print(data)
 
 """
-modifiedDatafile = open("modifiedTrain.csv", 'w', newline='')
+modifiedDatafile = open("data/modifiedTrain.csv", 'w', newline='')
 modifiedDatafileObject = csv.writer(modifiedDatafile)
 for row in data:
     modifiedDatafileObject.writerow(row)

@@ -1,3 +1,5 @@
+# 출처: http://pinkwink.kr/571
+
 import numpy as np
 import matplotlib.pyplot as plt
 

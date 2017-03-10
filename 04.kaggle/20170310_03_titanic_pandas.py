@@ -2,7 +2,7 @@ import csv as csv
 import numpy as np
 import pandas as pd
 
-csv_file_object = csv.reader(open('train.csv'))
+csv_file_object = csv.reader(open('data/train.csv'))
 next(csv_file_object)
 data = []
 for row in csv_file_object:
@@ -17,7 +17,7 @@ data = np.array(data)
 
 #ages_onboard = data[0::, 5].astype(np.float)
 
-df = pd.read_csv('train.csv', header=0)
+df = pd.read_csv('data/train.csv', header=0)
 
 #print(df)
 
