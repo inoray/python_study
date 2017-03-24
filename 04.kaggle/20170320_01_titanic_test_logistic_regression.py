@@ -221,41 +221,50 @@ if True:
     #print(df_train_x.values)
     #print(df_train_y.values.reshape(-1, 1))
 
-    x = tf.placeholder(tf.float32, [None, 7])
+    print(df_train_x.shape[1])
+
+    x = tf.placeholder(tf.float32, [None, df_train_x.shape[1]])
     y_ = tf.placeholder(tf.float32, [None, 1])
 
-    W = tf.Variable(tf.zeros([7, 1]))
+    W = tf.Variable(tf.zeros([df_train_x.shape[1], 1]))
     b = tf.Variable(tf.zeros([1]))
 
-    y = tf.matmul(x, W) + b
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y))
+    y = tf.nn.sigmoid(tf.matmul(x, W) + b)
+    cost = tf.reduce_mean(tf.square(y-y_))
 
-    #correct_prediction = tf.equal(tf.argmax(y_, 1), tf.argmax(y, 1))
-    correct_prediction = tf.equal(y_, y)
+    correct_prediction = tf.equal(y_, tf.round(y))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-    optimizer = tf.train.GradientDescentOptimizer(0.0001)
+    optimizer = tf.train.GradientDescentOptimizer(0.01)
     train_step = optimizer.minimize(cost)
 
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
 
-    for i in range(100):
+    for i in range(30000):
         sess.run(train_step, feed_dict={x: df_train_x.values, y_: ty})
-        _cost = sess.run(cost, feed_dict={x: df_train_x.values, y_: ty})
-        _acc = sess.run(accuracy, feed_dict={x: df_train_x.values, y_: ty})
-        print(i, _cost, _acc)
+        if i % 100 == 0:
+            _cost = sess.run(cost, feed_dict={x: df_train_x.values, y_: ty})
+            _acc = sess.run(accuracy, feed_dict={x: df_train_x.values, y_: ty})
+            print(i, _cost, _acc)
 
-    #df_test['Sex_c'] = df_test.Sex.astype('category').cat.codes
-    #df_test['Embarked_c'] = df_test.Embarked.astype('category').cat.codes
-
-    #df_test_x = df_test.drop(['PassengerId', 'Name', 'Sex', 'Embarked', 'Ticket', 'Cabin'], axis=1)
-    #df_test_y = df_test.Survived
-    #testy = df_test_y.values.reshape(-1, 1)
-    #print("accuracy test = ", sess.run(accuracy, feed_dict={x: df_test_x.values, y: testy}))
     print("accuracy test = ", sess.run(accuracy, feed_dict={x: df_train_x.values, y_: ty}))
     for i in range(5):
-        print("data test = ", i, sess.run(y, feed_dict={x: df_train_x.values[i].reshape(-1, 7), y_: ty[i].reshape(-1, 1)}))
+        print("data test = ", i, ty[i].reshape(-1, 1), sess.run(y, feed_dict={x: df_train_x.values[i].reshape(-1, df_train_x.shape[1]), y_: ty[i].reshape(-1, 1)}))
 
+    # test
+    df_test['Sex_c'] = df_test.Sex.astype('category').cat.codes
+    df_test['Embarked_c'] = df_test.Embarked.astype('category').cat.codes
+
+    df_test_x = df_test.drop(['PassengerId', 'Name', 'Sex', 'Embarked', 'Ticket', 'Cabin'], axis=1)
+
+    df_result = pd.DataFrame(columns=('PassengerId', 'Survived'))
+    df_result.PassengerId = df_result.PassengerId.astype(np.int64)
+    df_result.Survived = df_result.Survived.astype(np.int64)
+    for i in range(df_test_x.shape[0]):
+        predict = sess.run(y, feed_dict={x: df_test_x.values[i].reshape(-1, df_test_x.shape[1])})
+        df_result.loc[i] = [df_test.PassengerId[i].astype(int), sess.run(tf.round(predict))[0][0].astype(int)]
+    df_result.Survived[df_result.Survived < 0] = 0
+    df_result.to_csv("data/result.csv", index=False)
 
 
