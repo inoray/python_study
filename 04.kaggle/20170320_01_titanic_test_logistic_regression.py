@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
+import tensorflow.contrib.learn as learn
 
 # csv 읽어오기
 df_train = pd.read_csv('data/train.csv', header=0)
@@ -124,7 +125,7 @@ if False:
 
     plt.show()
 
-if True:
+if False:
     fig = plt.figure(figsize=(18, 4))
     alpha_level = 0.65
 
@@ -137,7 +138,7 @@ if True:
     female_highclass.plot(kind='bar', label='female, highclass', color='#FA2479', alpha=alpha_level)
     ax1.set_xticklabels(["Survived", "Died"], rotation=0)
     ax1.set_xlim(-1, len(female_highclass))
-    plt.title("Who Survived? with respect to Gender and Class");
+    plt.title("Who Survived? with respect to Gender and Class")
     plt.legend(loc='best')
 
     ax2 = fig.add_subplot(142, sharey=ax1)
@@ -162,33 +163,99 @@ if True:
     plt.legend(loc='best')
 
     plt.show()
-    
-"""
-x = tf.placeholder(tf.float32, [None, 1])
-y_ = tf.placeholder(tf.float32, [None, 1])
 
-W = tf.Variable(tf.zeros([1, 1]))
-b = tf.Variable(tf.zeros([1]))
+if False:
+    fig = plt.figure(figsize=(15, 8))
 
-y = tf.matmul(W, x) + b
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y))
+    ax1 = fig.add_subplot(221)
+    df_train.SibSp.value_counts().plot(kind='bar', alpha=0.5)
+    plt.title("SibSp count")
 
-correct_prediction = tf.equal(tf.argmax(y_, 1), tf.argmax(y, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    ax2 = fig.add_subplot(222)
 
-optimizer = tf.train.GradientDescentOptimizer(0.0001)
-train_step = optimizer.minimize(cost)
+    #for name, group in df_train['SibSp'].groupby(df_train['Survived']):
+    #    print(name)
+    #    print(group)
+    groupSibsp = df_train['SibSp'].groupby(df_train['Survived'])
+    df_t_SibSp = pd.DataFrame({'Non-Survivors': groupSibsp.get_group(0),
+                               'Survivors': groupSibsp.get_group(1)})
+    df_t_SibSp.plot(kind='hist', ax=ax2, alpha=0.5, stacked=True)
+    plt.title("SibSp by Survived")
 
-sess = tf.InteractiveSession()
-tf.global_variables_initializer().run()
+    for p in ax2.patches:
+        bl = p.get_xy()
+        height = p.get_height()
+        ax2.text(p.get_x()+p.get_width()/2., height/2+bl[1]+3, "%d" % height, ha="center")
 
-for i in range(3000):
-    sess.run(train_step, feed_dict={x: df_train['Pclass'], y: df_train['Survived']})
-    _cost = sess.run(cost, feed_dict={x: df_train['Pclass'], y: df_train['Survived']})
-    _acc = sess.run(accuracy, feed_dict={x: df_train['Pclass'], y: df_train['Survived']})
-    print(_cost, _acc)
+    ax3 = fig.add_subplot(223)
 
-print("accuracy test = ", sess.run(accuracy, feed_dict={x: df_test['Pclass'], y: df_test['Survived']}))
+    groupParch = df_train['Parch'].groupby(df_train['Survived'])
+    df_t_Parch = pd.DataFrame({'Non-Survivors': groupParch.get_group(0),
+                               'Survivors': groupParch.get_group(1)})
+    df_t_Parch.plot(kind='hist', ax=ax3, alpha=0.5, stacked=True)
+    plt.title('Parch by Survived')
+    for p in ax3.patches:
+        bl = p.get_xy()
+        height = p.get_height()
+        ax3.text(p.get_x()+p.get_width()/2., height/2+bl[1]+3, "%d" % height, ha="center")
+    print(df_t_Parch)
 
-"""
+    ax4 = fig.add_subplot(224)
+    ax4.hist((groupSibsp.get_group(0), groupSibsp.get_group(1))
+             , alpha=0.5
+             , stacked=True)
+    ax4.set_xticklabels([str(i) for i in range(0, 9)])
+    plt.show()
+
+if True:
+    df_train['Sex_c'] = df_train.Sex.astype('category').cat.codes
+    df_train['Embarked_c'] = df_train.Embarked.astype('category').cat.codes
+    #print(df_train.Sex_c)
+    #print(df_train.Embarked_c)
+    df_train_x = df_train.drop(['PassengerId', 'Survived', 'Name', 'Sex', 'Embarked'], axis=1)
+    df_train_y = df_train.Survived
+    ty = df_train_y.values.reshape(-1, 1)
+    #print(df_train_x)
+    #df_train_real = pd.DataFrame()
+    #lst = df_train_x.values
+    #print(df_train_x.values)
+    #print(df_train_y.values.reshape(-1, 1))
+
+    x = tf.placeholder(tf.float32, [None, 7])
+    y_ = tf.placeholder(tf.float32, [None, 1])
+
+    W = tf.Variable(tf.zeros([7, 1]))
+    b = tf.Variable(tf.zeros([1]))
+
+    y = tf.matmul(x, W) + b
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y))
+
+    #correct_prediction = tf.equal(tf.argmax(y_, 1), tf.argmax(y, 1))
+    correct_prediction = tf.equal(y_, y)
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+    optimizer = tf.train.GradientDescentOptimizer(0.0001)
+    train_step = optimizer.minimize(cost)
+
+    sess = tf.InteractiveSession()
+    tf.global_variables_initializer().run()
+
+    for i in range(100):
+        sess.run(train_step, feed_dict={x: df_train_x.values, y_: ty})
+        _cost = sess.run(cost, feed_dict={x: df_train_x.values, y_: ty})
+        _acc = sess.run(accuracy, feed_dict={x: df_train_x.values, y_: ty})
+        print(i, _cost, _acc)
+
+    #df_test['Sex_c'] = df_test.Sex.astype('category').cat.codes
+    #df_test['Embarked_c'] = df_test.Embarked.astype('category').cat.codes
+
+    #df_test_x = df_test.drop(['PassengerId', 'Name', 'Sex', 'Embarked', 'Ticket', 'Cabin'], axis=1)
+    #df_test_y = df_test.Survived
+    #testy = df_test_y.values.reshape(-1, 1)
+    #print("accuracy test = ", sess.run(accuracy, feed_dict={x: df_test_x.values, y: testy}))
+    print("accuracy test = ", sess.run(accuracy, feed_dict={x: df_train_x.values, y_: ty}))
+    for i in range(5):
+        print("data test = ", i, sess.run(y, feed_dict={x: df_train_x.values[i].reshape(-1, 7), y_: ty[i].reshape(-1, 1)}))
+
+
 
