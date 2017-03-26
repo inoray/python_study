@@ -2,6 +2,14 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 
+
+def MinMaxScaler(data):
+    numerator = data - np.min(data, 0)
+    denominator = np.max(data, 0) - np.min(data, 0)
+    # noise term prevents the zero division
+    return numerator / (denominator + 1e-7)
+
+
 df_train = pd.read_csv('data/train.csv', header=0)
 df_train['Sex_c'] = df_train.Sex.astype('category').cat.codes
 df_train['Embarked_c'] = df_train.Embarked.astype('category').cat.codes
@@ -28,7 +36,15 @@ fc2 = tf.nn.relu(tf.matmul(fc1, W2) + b2)
 
 y = tf.nn.sigmoid(tf.matmul(fc2, W3) + b3)
 
-cost = tf.reduce_mean(tf.square(y_ - y))
+beta = 0.001
+#l2reg = 0.001*tf.reduce_sum(tf.square())
+cost = (tf.reduce_mean(tf.square(y_ - y))
+        + beta*tf.nn.l2_loss(W1)
+        + beta*tf.nn.l2_loss(W2)
+        + beta*tf.nn.l2_loss(W3)
+        + beta*tf.nn.l2_loss(b1)
+        + beta*tf.nn.l2_loss(b2)
+        + beta*tf.nn.l2_loss(b3))
 
 optimizer = tf.train.AdamOptimizer(0.001)
 train_step = optimizer.minimize(cost)
@@ -39,11 +55,11 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-for i in range(30000):
-    sess.run(train_step, feed_dict={x: df_train_x, y_: ty})
+for i in range(15000):
+    sess.run(train_step, feed_dict={x: df_train_x.values, y_: ty})
     if i % 100 == 0:
-        cost_ = sess.run(cost, feed_dict={x: df_train_x, y_: ty})
-        acc_ = sess.run(accuracy, feed_dict={x: df_train_x, y_: ty})
+        cost_ = sess.run(cost, feed_dict={x: df_train_x.values, y_: ty})
+        acc_ = sess.run(accuracy, feed_dict={x: df_train_x.values, y_: ty})
         print(i, cost_, acc_)
 
 
