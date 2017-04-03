@@ -47,7 +47,7 @@ print(df_train['Survived'][df_t_female].value_counts())
 print(df_train['Survived'][df_t_female].value_counts(normalize=True))
 
 
-if False:
+if True:
     # specifies the parameters of our graphs
     fig1 = plt.figure(figsize=(18, 8))
     alpha = alpha_scatterplot = 0.2
@@ -207,7 +207,7 @@ if False:
     ax4.set_xticklabels([str(i) for i in range(0, 9)])
     plt.show()
 
-if True:
+if False:
     df_train['Sex_c'] = df_train.Sex.astype('category').cat.codes
     df_train['Embarked_c'] = df_train.Embarked.astype('category').cat.codes
     #print(df_train.Sex_c)
