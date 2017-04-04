@@ -10,9 +10,32 @@ def MinMaxScaler(data):
     return numerator / (denominator + 1e-7)
 
 
+def title_mapping(x):
+    if x.Title in set(['Don', 'Rev', 'Sir', 'Jonkheer']):
+        return 'Mr'
+    elif x.Title in set(['Lady', 'the Countess']):
+        return 'Mrs'
+    elif x.Title in set(['Mlle', 'Mme', 'Dona', 'Ms']):
+        return "Miss"
+    elif x.Title in set(['Major', 'Col', 'Capt']):
+        return "Officer"
+    elif x.Title == 'Dr' and x.Sex == 'female':
+        return 'Mrs'
+    elif x.Title == 'Dr' and x.Sex == 'male':
+        return 'Mr'
+    else:
+        return x.Title
+
+
 df_train = pd.read_csv('data/train.csv', header=0)
+
 df_train['Sex_c'] = df_train.Sex.astype('category').cat.codes
 df_train['Embarked_c'] = df_train.Embarked.astype('category').cat.codes
+df_train['Title'] = df_train['Name'].apply(lambda x: (x.split(',')[1]).split('.')[0][1:])
+df_train['Title'] = df_train.apply(title_mapping, axis=1)
+df_train['Title'] = df_train.Title.astype('category').cat.codes
+#df_train['Fare'] = df_train['Fare'] / 10
+
 df_train = df_train.drop(['Ticket', 'Cabin', 'PassengerId', 'Name', 'Sex', 'Embarked'], axis=1)
 df_train = df_train.dropna()
 
@@ -55,7 +78,7 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-for i in range(15000):
+for i in range(50000):
     sess.run(train_step, feed_dict={x: df_train_x.values, y_: ty})
     if i % 100 == 0:
         cost_ = sess.run(cost, feed_dict={x: df_train_x.values, y_: ty})
@@ -67,6 +90,10 @@ for i in range(15000):
 df_test = pd.read_csv('data/test.csv', header=0)
 df_test['Sex_c'] = df_test.Sex.astype('category').cat.codes
 df_test['Embarked_c'] = df_test.Embarked.astype('category').cat.codes
+df_test['Title'] = df_test['Name'].apply(lambda x: (x.split(',')[1]).split('.')[0][1:])
+df_test['Title'] = df_test.apply(title_mapping, axis=1)
+df_test['Title'] = df_test.Title.astype('category').cat.codes
+#df_test['Fare'] = df_test['Fare'] / 10
 
 df_test_x = df_test.drop(['PassengerId', 'Name', 'Sex', 'Embarked', 'Ticket', 'Cabin'], axis=1)
 
@@ -77,7 +104,7 @@ for i in range(df_test_x.shape[0]):
     predict = sess.run(y, feed_dict={x: df_test_x.values[i].reshape(-1, df_test_x.shape[1])})
     df_result.loc[i] = [df_test.PassengerId[i].astype(int), sess.run(tf.round(predict))[0][0].astype(int)]
 df_result.Survived[df_result.Survived < 0] = 0
-df_result.to_csv("data/result_NN_01.csv", index=False)
+df_result.to_csv("data/result_NN_02.csv", index=False)
 
 sess.close()
 
